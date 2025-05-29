@@ -1,10 +1,11 @@
 {
     "version": 2,
-    "functions": {
-      "api/send-email.js": {
-        "runtime": "nodejs18.x"
+    "builds": [
+      {
+        "src": "api/send-email.js",
+        "use": "@vercel/node"
       }
-    },
+    ],
     "routes": [
       {
         "src": "/api/send-email",
