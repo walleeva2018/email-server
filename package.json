@@ -11,8 +11,5 @@
   "description": "Send emails using Resend API",
   "dependencies": {
     "resend": "^4.0.0"
-  },
-  "devDependencies": {
-    "vercel": "^29.4.6"
   }
 }
