@@ -1,8 +1,16 @@
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const createTransporter = () => {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+};
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -16,18 +24,36 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { to, subject, html } = req.body;
+    const { to, subject, html, text, from } = req.body;
 
-    const data = await resend.emails.send({
-      from: 'onboarding@resend.dev',
-      to,
+    if (!to || !subject || (!html && !text)) {
+      return res.status(400).json({
+        error: 'Missing required fields: to, subject, and either html or text',
+      });
+    }
+
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: from || process.env.GMAIL_USER,
+      to: Array.isArray(to) ? to.join(', ') : to,
       subject,
-      html,
-    });
+      ...(html && { html }),
+      ...(text && { text }),
+    };
 
-    return res.status(200).json(data);
+    const info = await transporter.sendMail(mailOptions);
+
+    return res.status(200).json({
+      success: true,
+      messageId: info.messageId,
+      response: info.response,
+    });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'Failed to send email' });
+    console.error('Email sending error:', error);
+    return res.status(500).json({
+      error: 'Failed to send email',
+      details: error.message,
+    });
   }
-};
+}
